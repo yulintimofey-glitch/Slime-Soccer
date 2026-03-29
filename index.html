@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Slime Soccer | Футбол со слаймами</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: #0a0f1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', 'VT323', monospace;
+            padding: 20px;
+        }
+
+        /* Главный контейнер для игры и стартового экрана */
+        .app-container {
+            position: relative;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        /* СТАРТОВЫЙ ЭКРАН */
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 20%, #1a2a1a, #051505);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px);
+            transition: opacity 0.5s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        .start-card {
+            background: #1e1c16e6;
+            border: 4px solid #ffcf6e;
+            border-radius: 60px;
+            padding: 40px 60px;
+            max-width: 700px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,200,0.1);
+            backdrop-filter: blur(8px);
+            animation: floatGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes floatGlow {
+            0% { box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,200,0.1); border-color: #ffcf6e; }
+            50% { box-shadow: 0 25px 50px rgba(255,200,100,0.3), inset 0 1px 4px rgba(255,255,200,0.3); border-color: #ffdf8e; }
+            100% { box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,200,0.1); border-color: #ffcf6e; }
+        }
+
+        .game-title {
+            font-size: 68px;
+            font-weight: bold;
+            color: #ffdf7e;
+            text-shadow: 6px 6px 0 #7a4a1a;
+            letter-spacing: 6px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .sub {
+            font-size: 18px;
+            color: #cfc69a;
+            margin-bottom: 30px;
+            border-top: 1px dashed #ffcf6e;
+            border-bottom: 1px dashed #ffcf6e;
+            display: inline-block;
+            padding: 8px 20px;
+        }
+
+        .rules {
+            background: #0f0f0ab3;
+            border-radius: 40px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+            color: #f0e6b0;
+        }
+
+        .rules h3 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #ffcf6e;
+        }
+
+        .rules p {
+            margin: 8px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .controls-grid {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .control-box {
+            background: #00000099;
+            border-radius: 30px;
+            padding: 15px;
+            flex: 1;
+            text-align: center;
+            border: 1px solid #ffcf6e;
+        }
+
+        .control-box h4 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #ffdf7e;
+        }
+
+        .control-box p {
+            font-size: 16px;
+            margin: 6px 0;
+            font-weight: bold;
+        }
+
+        .start-btn {
+            background: #ffcf6e;
+            border: none;
+            font-size: 32px;
+            font-weight: bold;
+            padding: 15px 40px;
+            border-radius: 80px;
+            margin: 25px 0 20px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            color: #1e2a0a;
+            box-shadow: 0 8px 0 #8b5a2b;
+            transition: 0.07s linear;
+            letter-spacing: 2px;
+        }
+
+        .start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #8b5a2b;
+        }
+
+        .footer-credit {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #b8aa7a;
+            border-top: 1px solid #5a4a2a;
+            padding-top: 15px;
+        }
+
+        /* Игровой контейнер (скрыт до старта) */
+        .game-container {
+            background: #0a0a0a;
+            padding: 25px 30px 30px;
+            border-radius: 40px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.8);
+            border: 3px solid #5a4a2a;
+            position: relative;
+            display: none;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            cursor: none;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            gap: 45px;
+            background: #000000cc;
+            padding: 12px 45px;
+            border-radius: 80px;
+            border: 2px solid #8b7355;
+            backdrop-filter: blur(4px);
+        }
+
+        .team {
+            text-align: center;
+            font-weight: bold;
+            background: #1a1a1ad9;
+            padding: 6px 45px;
+            border-radius: 50px;
+            color: #ffefb0;
+            text-shadow: 2px 2px 0 #000;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .blue-score { background: #1a334de6; box-shadow: 0 0 0 3px #3a7acf; }
+        .red-score  { background: #6b2a2ae6; box-shadow: 0 0 0 3px #cf5a4a; }
+        .score-value {
+            font-size: 56px;
+            font-weight: 900;
+            background: #000000cc;
+            display: inline-block;
+            width: 100px;
+            border-radius: 40px;
+            margin-left: 20px;
+            color: #ffd966;
+            text-shadow: 0 0 3px #ff8800;
+            padding: 0 8px;
+        }
+        .timer {
+            font-size: 34px;
+            font-weight: bold;
+            background: #000000aa;
+            padding: 8px 25px;
+            border-radius: 50px;
+            color: #ffefb0;
+            font-family: monospace;
+            letter-spacing: 3px;
+        }
+        .controls-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            gap: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            background: #0a0a0ae6;
+            padding: 12px 25px;
+            border-radius: 70px;
+            color: #cfc18a;
+            border: 1px solid #6a5a3a;
+        }
+        .controls-left, .controls-right {
+            background: #000000b3;
+            padding: 10px 25px;
+            border-radius: 45px;
+        }
+        button {
+            background: #9b7e5a;
+            border: none;
+            font-weight: bold;
+            font-size: 20px;
+            padding: 8px 25px;
+            border-radius: 70px;
+            cursor: pointer;
+            font-family: monospace;
+            box-shadow: 0 4px 0 #4a3a1a;
+            transition: 0.05s linear;
+            color: #1a1a0a;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 1px 0 #4a3a1a; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- СТАРТОВАЯ СТРАНИЦА -->
+    <div class="start-screen" id="startScreen">
+        <div class="start-card">
+            <div class="game-title">⚡ SLIME SOCCER ⚡</div>
+            <div class="sub">Забавный футбол с прыгучими слаймами!</div>
+            <div class="rules">
+                <h3>📜 ПРАВИЛА</h3>
+                <p>🏆 Игра до 5 голов или до окончания 3 минут.</p>
+                <p>⚡ Супер-прыжок: удерживай кнопку прыжка дольше — слайм взлетит выше!</p>
+                <p>💥 Удар головой: отбивай мяч верхней частью тела — удар становится сильнее.</p>
+                <p>⛔ Центральная сетка: слаймы не могут пересекать середину поля.</p>
+            </div>
+            <div class="controls-grid">
+                <div class="control-box">
+                    <h4>🔵 СИНИЙ СЛАЙМ</h4>
+                    <p>⬅️ A / ➡️ D</p>
+                    <p>🦘 Прыжок / супер-прыжок: W</p>
+                </div>
+                <div class="control-box">
+                    <h4>🔴 КРАСНЫЙ СЛАЙМ</h4>
+                    <p>⬅️ ➡️ стрелки</p>
+                    <p>🦘 Прыжок / супер-прыжок: ↑</p>
+                </div>
+            </div>
+            <button class="start-btn" id="startGameBtn">▶ НАЧАТЬ ИГРУ ◀</button>
+            <div class="footer-credit">
+                Создано учеником на уроке по ИИ | Slime Soccer v2.0
+            </div>
+        </div>
+    </div>
+
+    <!-- ИГРОВОЙ КОНТЕЙНЕР (изначально скрыт) -->
+    <div class="game-container" id="gameContainer">
+        <div class="scoreboard">
+            <div class="team blue-score">⚡ СИНИЙ СЛАЙМ <span class="score-value" id="blueScore">0</span></div>
+            <div class="timer" id="timerDisplay">03:00</div>
+            <div class="team red-score">🔥 КРАСНЫЙ СЛАЙМ <span class="score-value" id="redScore">0</span></div>
+        </div>
+        <canvas id="gameCanvas" width="1200" height="660"></canvas>
+        <div class="controls-info">
+            <div class="controls-left">🟦 [W] (удерж. супер-прыжок) &nbsp;&nbsp; [A] ← &nbsp;&nbsp; [D] →</div>
+            <div class="controls-right">🟥 [↑] (удерж. супер-прыжок) &nbsp;&nbsp; [←] &nbsp;&nbsp; [→]</div>
+            <div style="background:#000000b3; padding:10px 25px; border-radius:45px;">⏸ [P] ПАУЗА</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- ИНИЦИАЛИЗАЦИЯ ИГРЫ ----------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        
+        // --- РАЗМЕРЫ (1200x660) ---
+        const GROUND_Y = 520;
+        const SLIME_RADIUS = 26;
+        const BALL_RADIUS = 17;
+        
+        const LEFT_FENCE = 14;
+        const RIGHT_FENCE = canvas.width - 14;
+        const TOP_FENCE = 42;
+        const BOTTOM_FENCE = GROUND_Y + 10;
+        
+        const LEFT_GOAL_X = 0;
+        const RIGHT_GOAL_X = canvas.width - 46;
+        const GOAL_POST_WIDTH = 10;
+        const GOAL_INNER_X_LEFT = LEFT_GOAL_X + GOAL_POST_WIDTH;
+        const GOAL_INNER_X_RIGHT = RIGHT_GOAL_X;
+        const GOAL_Y_TOP = GROUND_Y - 88;
+        const GOAL_Y_BOTTOM = GROUND_Y + 12;
+        
+        const CENTER_WALL_X = canvas.width / 2;
+        
+        // ФИЗИКА
+        const GRAVITY = 0.7;
+        const BASE_JUMP_POWER = -9.2;
+        const MAX_JUMP_CHARGE = 1.8;
+        const CHARGE_RATE = 0.035;
+        const MAX_SPEED = 2.3;
+        const ACCELERATION = 0.22;
+        const BALL_BOUNCE = 0.86;
+        const WALL_BOUNCE = 0.91;
+        const BALL_MAX_SPEED = 7.5;
+        const HEAD_BONUS = 1.5;
+        
+        let gameStarted = false;
+        let paused = false;
+        let matchTime = 180;
+        let timerInterval = null;
+        
+        let blueSlime = {
+            x: 216, y: GROUND_Y - SLIME_RADIUS,
+            vx: 0, vy: 0, onGround: true,
+            jumpCharge: 0, charging: false
+        };
+        let redSlime = {
+            x: canvas.width - 216, y: GROUND_Y - SLIME_RADIUS,
+            vx: 0, vy: 0, onGround: true,
+            jumpCharge: 0, charging: false
+        };
+        let ball = {
+            x: canvas.width/2, y: GROUND_Y - 42,
+            vx: (Math.random() - 0.5) * 1.2,
+            vy: -2.0,
+            radius: BALL_RADIUS
+        };
+        
+        let blueGoals = 0, redGoals = 0;
+        let gameWinner = null;
+        let victoryMessageShown = false;
+        
+        const keys = {
+            ArrowLeft: false, ArrowRight: false, ArrowUp: false,
+            KeyA: false, KeyD: false, KeyW: false,
+            KeyP: false
+        };
+        
+        let trail = [];
+        let particles = [];
+        let blueJumpAnim = 0, redJumpAnim = 0;
+        
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx && window.AudioContext) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        function playTone(freq, duration, volume = 0.3, type = 'sine') {
+            if (!audioCtx || !gameStarted || paused) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(volume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.start();
+            osc.stop(now + duration);
+        }
+        function playKick() { playTone(220, 0.15, 0.25, 'sawtooth'); }
+        function playHeadKick() { playTone(380, 0.2, 0.4, 'square'); }
+        function playJump() { playTone(440, 0.1, 0.2, 'triangle'); }
+        function playGoal() { playTone(660, 0.4, 0.4, 'sine'); playTone(880, 0.3, 0.3, 'sine'); }
+        
+        function formatTime(seconds) {
+            let mins = Math.floor(seconds / 60);
+            let secs = seconds % 60;
+            return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        }
+        function updateTimerDisplay() {
+            document.getElementById('timerDisplay').innerText = formatTime(matchTime);
+        }
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!gameStarted || paused || gameWinner) return;
+                if (matchTime > 0) {
+                    matchTime--;
+                    updateTimerDisplay();
+                    if (matchTime === 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        gameWinner = (blueGoals > redGoals) ? 'blue' : (redGoals > blueGoals) ? 'red' : null;
+                        if (gameWinner) showVictoryMessage(gameWinner);
+                        else showVictoryMessage('draw');
+                    }
+                }
+            }, 1000);
+        }
+        
+        function checkVictory() {
+            if (gameWinner) return true;
+            if (blueGoals >= 5) { gameWinner = 'blue'; showVictoryMessage('blue'); return true; }
+            if (redGoals >= 5) { gameWinner = 'red'; showVictoryMessage('red'); return true; }
+            if (matchTime === 0) {
+                gameWinner = (blueGoals > redGoals) ? 'blue' : (redGoals > blueGoals) ? 'red' : null;
+                if (gameWinner) showVictoryMessage(gameWinner);
+                else showVictoryMessage('draw');
+                return true;
+            }
+            return false;
+        }
+        
+        function showVictoryMessage(winner) {
+            if (victoryMessageShown) return;
+            victoryMessageShown = true;
+            const overlay = document.createElement('div');
+            overlay.className = 'victory-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '50%';
+            overlay.style.left = '50%';
+            overlay.style.transform = 'translate(-50%, -50%)';
+            overlay.style.background = '#000000ee';
+            overlay.style.border = '5px solid #ffcf6e';
+            overlay.style.borderRadius = '60px';
+            overlay.style.padding = '40px 80px';
+            overlay.style.textAlign = 'center';
+            overlay.style.zIndex = '100';
+            overlay.style.fontFamily = 'monospace';
+            overlay.style.backdropFilter = 'blur(8px)';
+            let winnerText = '';
+            if (winner === 'blue') winnerText = 'ПОБЕДА СИНЕГО СЛАЙМА!';
+            else if (winner === 'red') winnerText = 'ПОБЕДА КРАСНОГО СЛАЙМА!';
+            else winnerText = 'НИЧЬЯ!';
+            overlay.innerHTML = `
+                <div style="font-size: 72px; font-weight: bold; color: #ffcf6e; text-shadow: 6px 6px 0 #5a3a15; letter-spacing: 8px;">${winner === 'draw' ? 'НИЧЬЯ!' : 'ПОБЕДА!'}</div>
+                <div style="font-size: 28px; color: white; margin-top: 20px;">${winnerText}</div>
+                <div style="margin-top: 25px;"><button id="restartAfterVictoryBtn" style="font-size: 24px; padding: 10px 30px; background:#ffcf6e; border:none; border-radius:50px; cursor:pointer;">▶ НАЧАТЬ ЗАНОВО ◀</button></div>
+            `;
+            document.body.appendChild(overlay);
+            document.getElementById('restartAfterVictoryBtn')?.addEventListener('click', () => {
+                resetFullGame();
+                overlay.remove();
+            });
+        }
+        
+        function resetFullGame() {
+            blueGoals = 0; redGoals = 0;
+            gameWinner = null;
+            victoryMessageShown = false;
+            matchTime = 180;
+            updateTimerDisplay();
+            updateScoreUI();
+            blueSlime.x = 216; blueSlime.y = GROUND_Y - SLIME_RADIUS;
+            blueSlime.vx = 0; blueSlime.vy = 0; blueSlime.jumpCharge = 0;
+            redSlime.x = canvas.width - 216; redSlime.y = GROUND_Y - SLIME_RADIUS;
+            redSlime.vx = 0; redSlime.vy = 0; redSlime.jumpCharge = 0;
+            ball.x = canvas.width/2; ball.y = GROUND_Y - 42;
+            ball.vx = (Math.random() - 0.5) * 1.2;
+            ball.vy = -2.0;
+            trail = [];
+            particles = [];
+            blueJumpAnim = 0; redJumpAnim = 0;
+            if (timerInterval) clearInterval(timerInterval);
+            if (gameStarted) startTimer();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        
+        function resetPositionsAfterGoal(scorer) {
+            if (gameWinner) return;
+            blueSlime.x = 216; blueSlime.y = GROUND_Y - SLIME_RADIUS;
+            blueSlime.vx = 0; blueSlime.vy = 0; blueSlime.jumpCharge = 0;
+            redSlime.x = canvas.width - 216; redSlime.y = GROUND_Y - SLIME_RADIUS;
+            redSlime.vx = 0; redSlime.vy = 0; redSlime.jumpCharge = 0;
+            let dir = (scorer === 'blue') ? 0.4 : -0.4;
+            ball.x = canvas.width/2 + dir * 24;
+            ball.y = GROUND_Y - 45;
+            ball.vx = dir * 1.0;
+            ball.vy = -1.8;
+            trail = [];
+            particles = [];
+            playGoal();
+        }
+        
+        function updateScoreUI() {
+            document.getElementById('blueScore').innerText = blueGoals;
+            document.getElementById('redScore').innerText = redGoals;
+        }
+        
+        function checkGoal() {
+            if (gameWinner || !gameStarted) return false;
+            let scored = false;
+            let scorer = null;
+            if (ball.x - ball.radius <= GOAL_INNER_X_LEFT + 30 && ball.x + ball.radius >= LEFT_GOAL_X) {
+                if (ball.y + ball.radius >= GOAL_Y_TOP && ball.y - ball.radius <= GOAL_Y_BOTTOM) {
+                    redGoals++; scorer = 'red'; scored = true;
+                }
+            }
+            if (!scored && ball.x + ball.radius >= GOAL_INNER_X_RIGHT && ball.x - ball.radius <= GOAL_INNER_X_RIGHT + 38) {
+                if (ball.y + ball.radius >= GOAL_Y_TOP && ball.y - ball.radius <= GOAL_Y_BOTTOM) {
+                    blueGoals++; scorer = 'blue'; scored = true;
+                }
+            }
+            if (scored) {
+                updateScoreUI();
+                if (checkVictory()) return true;
+                resetPositionsAfterGoal(scorer);
+            }
+            return false;
+        }
+        
+        function addParticles(x, y, color, isHead = false) {
+            let count = isHead ? 12 : 8;
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 2.5,
+                    vy: (Math.random() - 0.5) * 2.5 - 1,
+                    life: 0.6,
+                    size: isHead ? 2 + Math.random() * 4 : 2 + Math.random() * 3,
+                    color: isHead ? `hsl(55, 100%, 60%)` : color
+                });
+            }
+        }
+        
+        function handleCollisions() {
+            [blueSlime, redSlime].forEach(s => {
+                s.vy += GRAVITY;
+                s.x += s.vx;
+                s.y += s.vy;
+                if (s.x - SLIME_RADIUS < CENTER_WALL_X && s.x + SLIME_RADIUS > CENTER_WALL_X) {
+                    if (s.x < CENTER_WALL_X) s.x = CENTER_WALL_X - SLIME_RADIUS - 1;
+                    else s.x = CENTER_WALL_X + SLIME_RADIUS + 1;
+                    s.vx *= -0.3;
+                }
+                if (s.x - SLIME_RADIUS < LEFT_FENCE) { s.x = LEFT_FENCE + SLIME_RADIUS; s.vx *= -0.3; }
+                if (s.x + SLIME_RADIUS > RIGHT_FENCE) { s.x = RIGHT_FENCE - SLIME_RADIUS; s.vx *= -0.3; }
+                if (s.y + SLIME_RADIUS >= GROUND_Y) {
+                    s.y = GROUND_Y - SLIME_RADIUS;
+                    s.vy = 0;
+                    s.onGround = true;
+                    s.jumpCharge = 0;
+                } else { s.onGround = false; }
+                if (s.y - SLIME_RADIUS < TOP_FENCE) { s.y = TOP_FENCE + SLIME_RADIUS; if (s.vy < 0) s.vy = 0; }
+                if (Math.abs(s.vx) < 0.03) s.vx = 0;
+                if (Math.abs(s.vx) > MAX_SPEED) s.vx = s.vx > 0 ? MAX_SPEED : -MAX_SPEED;
+                if (Math.abs(s.vy) > 7) s.vy = s.vy > 0 ? 7 : -7;
+            });
+            if (!blueSlime.onGround) blueJumpAnim = Math.min(1, blueJumpAnim + 0.15);
+            else blueJumpAnim = Math.max(0, blueJumpAnim - 0.1);
+            if (!redSlime.onGround) redJumpAnim = Math.min(1, redJumpAnim + 0.15);
+            else redJumpAnim = Math.max(0, redJumpAnim - 0.1);
+            
+            ball.vy += GRAVITY;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            if (ball.x - ball.radius < LEFT_FENCE) { ball.x = LEFT_FENCE + ball.radius; ball.vx = -ball.vx * WALL_BOUNCE; }
+            if (ball.x + ball.radius > RIGHT_FENCE) { ball.x = RIGHT_FENCE - ball.radius; ball.vx = -ball.vx * WALL_BOUNCE; }
+            if (ball.y - ball.radius < TOP_FENCE) { ball.y = TOP_FENCE + ball.radius; ball.vy = -ball.vy * 0.85; }
+            if (ball.y + ball.radius > GROUND_Y) {
+                ball.y = GROUND_Y - ball.radius;
+                ball.vy = -ball.vy * BALL_BOUNCE;
+                if (Math.abs(ball.vy) < 0.5) ball.vy = 0;
+            }
+            if (Math.abs(ball.vx) > BALL_MAX_SPEED) ball.vx = ball.vx > 0 ? BALL_MAX_SPEED : -BALL_MAX_SPEED;
+            if (Math.abs(ball.vy) > BALL_MAX_SPEED) ball.vy = ball.vy > 0 ? BALL_MAX_SPEED : -BALL_MAX_SPEED;
+            
+            function collideSlimeBall(slime, b, isBlue) {
+                let dx = b.x - slime.x, dy = b.y - slime.y;
+                let dist = Math.hypot(dx, dy);
+                if (dist < SLIME_RADIUS + b.radius) {
+                    let isHead = (dy < -SLIME_RADIUS * 0.4);
+                    let speed = Math.hypot(b.vx - slime.vx, b.vy - slime.vy);
+                    if (speed > 1.2) addParticles(b.x, b.y, isBlue ? "#4285F4" : "#EA4335", isHead);
+                    let angle = Math.atan2(dy, dx);
+                    let overlap = (SLIME_RADIUS + b.radius) - dist;
+                    b.x += Math.cos(angle) * overlap;
+                    b.y += Math.sin(angle) * overlap;
+                    let nx = dx/dist, ny = dy/dist;
+                    let relVX = b.vx - slime.vx, relVY = b.vy - slime.vy;
+                    let velAlong = relVX * nx + relVY * ny;
+                    if (velAlong < 0) {
+                        let restitution = 0.78;
+                        let impulse = (1 + restitution) * velAlong;
+                        let powerMod = 1.0 + Math.min(1.5, Math.abs(slime.vx) / MAX_SPEED);
+                        if (isHead) powerMod *= HEAD_BONUS;
+                        b.vx -= impulse * nx * 0.88 * powerMod;
+                        b.vy -= impulse * ny * 0.88 * powerMod;
+                        slime.vx += impulse * nx * 0.32;
+                        slime.vy += impulse * ny * 0.28;
+                        if (isHead) playHeadKick();
+                        else playKick();
+                    }
+                    if (b.y + b.radius > GROUND_Y + 2) b.y = GROUND_Y - b.radius;
+                    return true;
+                }
+                return false;
+            }
+            collideSlimeBall(blueSlime, ball, true);
+            collideSlimeBall(redSlime, ball, false);
+            
+            let dxs = redSlime.x - blueSlime.x, dys = redSlime.y - blueSlime.y;
+            let distS = Math.hypot(dxs, dys);
+            if (distS < SLIME_RADIUS * 1.85) {
+                let ang = Math.atan2(dys, dxs);
+                let overlap = SLIME_RADIUS * 1.85 - distS;
+                blueSlime.x -= Math.cos(ang) * overlap * 0.5;
+                blueSlime.y -= Math.sin(ang) * overlap * 0.5;
+                redSlime.x += Math.cos(ang) * overlap * 0.5;
+                redSlime.y += Math.sin(ang) * overlap * 0.5;
+                let tempVX = blueSlime.vx, tempVY = blueSlime.vy;
+                blueSlime.vx = redSlime.vx * 0.4 + blueSlime.vx * 0.6;
+                blueSlime.vy = redSlime.vy * 0.4 + blueSlime.vy * 0.6;
+                redSlime.vx = tempVX * 0.4 + redSlime.vx * 0.6;
+                redSlime.vy = tempVY * 0.4 + redSlime.vy * 0.6;
+            }
+            if (Math.hypot(ball.vx, ball.vy) > 0.8) {
+                trail.push({ x: ball.x, y: ball.y, life: 0.5 });
+                if (trail.length > 8) trail.shift();
+            }
+            for (let i = 0; i < trail.length; i++) {
+                trail[i].life -= 0.03;
+                if (trail[i].life <= 0) { trail.splice(i,1); i--; }
+            }
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].x += particles[i].vx;
+                particles[i].y += particles[i].vy;
+                particles[i].life -= 0.025;
+                if (particles[i].life <= 0 || particles[i].y > GROUND_Y + 20) {
+                    particles.splice(i,1);
+                    i--;
+                }
+            }
+        }
+        
+        function handleInput() {
+            if (!gameStarted || paused || gameWinner) return;
+            if (keys.KeyW) {
+                if (blueSlime.onGround) {
+                    if (!blueSlime.charging) { blueSlime.charging = true; blueSlime.jumpCharge = 0; }
+                    else { blueSlime.jumpCharge = Math.min(MAX_JUMP_CHARGE, blueSlime.jumpCharge + CHARGE_RATE); }
+                }
+            } else {
+                if (blueSlime.charging && blueSlime.onGround) {
+                    let power = BASE_JUMP_POWER * (1 + blueSlime.jumpCharge);
+                    blueSlime.vy = Math.max(-14, power);
+                    blueSlime.onGround = false;
+                    playJump();
+                }
+                blueSlime.charging = false;
+                blueSlime.jumpCharge = 0;
+            }
+            if (keys.KeyA) { blueSlime.vx -= ACCELERATION; if (blueSlime.vx < -MAX_SPEED) blueSlime.vx = -MAX_SPEED; }
+            if (keys.KeyD) { blueSlime.vx += ACCELERATION; if (blueSlime.vx > MAX_SPEED) blueSlime.vx = MAX_SPEED; }
+            
+            if (keys.ArrowUp) {
+                if (redSlime.onGround) {
+                    if (!redSlime.charging) { redSlime.charging = true; redSlime.jumpCharge = 0; }
+                    else { redSlime.jumpCharge = Math.min(MAX_JUMP_CHARGE, redSlime.jumpCharge + CHARGE_RATE); }
+                }
+            } else {
+                if (redSlime.charging && redSlime.onGround) {
+                    let power = BASE_JUMP_POWER * (1 + redSlime.jumpCharge);
+                    redSlime.vy = Math.max(-14, power);
+                    redSlime.onGround = false;
+                    playJump();
+                }
+                redSlime.charging = false;
+                redSlime.jumpCharge = 0;
+            }
+            if (keys.ArrowLeft) { redSlime.vx -= ACCELERATION; if (redSlime.vx < -MAX_SPEED) redSlime.vx = -MAX_SPEED; }
+            if (keys.ArrowRight) { redSlime.vx += ACCELERATION; if (redSlime.vx > MAX_SPEED) redSlime.vx = MAX_SPEED; }
+        }
+        
+        // --- Упрощённые функции отрисовки (основные элементы) ---
+        function drawGradientBackground() { /* полная версия из предыдущего кода, здесь не приводим для краткости, но она есть в финальном коде */ 
+            let gradSky = ctx.createLinearGradient(0, 0, 0, GROUND_Y - 48);
+            gradSky.addColorStop(0, "#0a1030");
+            gradSky.addColorStop(0.5, "#6a3a20");
+            gradSky.addColorStop(1, "#b86a30");
+            ctx.fillStyle = gradSky;
+            ctx.fillRect(0, 0, canvas.width, GROUND_Y - 48);
+            ctx.fillStyle = "#ffd8a0aa";
+            for (let c = 0; c < 10; c++) {
+                let cloudX = (c * 160 + Date.now() * 0.03) % (canvas.width + 250) - 120;
+                for (let i = -22; i <= 22; i++) {
+                    for (let j = -12; j <= 12; j++) {
+                        if (i*i/160 + j*j/55 < 1) ctx.fillRect(Math.floor(cloudX + i), 48 + c * 30 + j, 1, 1);
+                    }
+                }
+            }
+            let gradGround = ctx.createLinearGradient(0, GROUND_Y - 48, 0, GROUND_Y + 25);
+            gradGround.addColorStop(0, "#2c6e1f");
+            gradGround.addColorStop(1, "#5cb84a");
+            ctx.fillStyle = gradGround;
+            ctx.fillRect(0, GROUND_Y - 48, canvas.width, 70);
+            ctx.fillStyle = "#3c9e2f";
+            for (let i = 0; i < 500; i++) {
+                let x = (i * 27) % canvas.width;
+                let y = GROUND_Y - 14 + (i % 10);
+                ctx.fillRect(x, y, 2, 5);
+            }
+            ctx.fillStyle = "#5ab84a";
+            for (let i = 0; i < 250; i++) {
+                let x = (i * 43) % canvas.width;
+                let y = GROUND_Y - 10;
+                ctx.fillRect(x, y, 1, 7);
+            }
+        }
+        function drawFence() { /* аналогично */ 
+            ctx.fillStyle = "#8b6b42";
+            for (let y = TOP_FENCE; y < BOTTOM_FENCE; y += 14) {
+                ctx.fillRect(LEFT_FENCE - 5, y, 5, 10);
+                ctx.fillRect(LEFT_FENCE - 2, y + 3, 3, 5);
+                ctx.fillRect(RIGHT_FENCE, y, 5, 10);
+                ctx.fillRect(RIGHT_FENCE + 2, y + 3, 3, 5);
+            }
+            ctx.fillRect(LEFT_FENCE - 5, TOP_FENCE - 3, 8, 5);
+            ctx.fillRect(RIGHT_FENCE - 3, TOP_FENCE - 3, 8, 5);
+            for (let x = LEFT_FENCE; x < RIGHT_FENCE; x += 20) {
+                ctx.fillRect(x, TOP_FENCE - 8, 10, 5);
+                ctx.fillRect(x + 3, TOP_FENCE - 5, 5, 5);
+            }
+        }
+        function drawRealisticGoals() {
+            ctx.fillStyle = "#9b7e5a";
+            ctx.fillRect(LEFT_GOAL_X, GOAL_Y_TOP - 8, 10, GOAL_Y_BOTTOM - GOAL_Y_TOP + 16);
+            ctx.fillRect(LEFT_GOAL_X, GOAL_Y_TOP - 8, 42, 10);
+            ctx.fillRect(LEFT_GOAL_X + 34, GOAL_Y_TOP - 8, 10, GOAL_Y_BOTTOM - GOAL_Y_TOP + 16);
+            ctx.fillStyle = "#c9ae7a";
+            ctx.fillRect(LEFT_GOAL_X + 3, GOAL_Y_TOP - 5, 5, GOAL_Y_BOTTOM - GOAL_Y_TOP + 10);
+            ctx.fillRect(LEFT_GOAL_X + 36, GOAL_Y_TOP - 5, 5, GOAL_Y_BOTTOM - GOAL_Y_TOP + 10);
+            ctx.fillRect(LEFT_GOAL_X + 3, GOAL_Y_TOP - 5, 38, 7);
+            ctx.strokeStyle = "#b8a87c";
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 8; i++) { let y = GOAL_Y_TOP + 14 + i * 17; ctx.beginPath(); ctx.moveTo(LEFT_GOAL_X + 12, y); ctx.lineTo(LEFT_GOAL_X + 38, y); ctx.stroke(); }
+            for (let i = 0; i < 6; i++) { let x = LEFT_GOAL_X + 14 + i * 8; ctx.beginPath(); ctx.moveTo(x, GOAL_Y_TOP + 8); ctx.lineTo(x, GOAL_Y_BOTTOM - 8); ctx.stroke(); }
+            ctx.fillStyle = "#9b7e5a";
+            ctx.fillRect(RIGHT_GOAL_X, GOAL_Y_TOP - 8, 10, GOAL_Y_BOTTOM - GOAL_Y_TOP + 16);
+            ctx.fillRect(RIGHT_GOAL_X + 34, GOAL_Y_TOP - 8, 10, GOAL_Y_BOTTOM - GOAL_Y_TOP + 16);
+            ctx.fillRect(RIGHT_GOAL_X, GOAL_Y_TOP - 8, 42, 10);
+            ctx.fillStyle = "#c9ae7a";
+            ctx.fillRect(RIGHT_GOAL_X + 3, GOAL_Y_TOP - 5, 5, GOAL_Y_BOTTOM - GOAL_Y_TOP + 10);
+            ctx.fillRect(RIGHT_GOAL_X + 36, GOAL_Y_TOP - 5, 5, GOAL_Y_BOTTOM - GOAL_Y_TOP + 10);
+            ctx.fillRect(RIGHT_GOAL_X + 3, GOAL_Y_TOP - 5, 38, 7);
+            for (let i = 0; i < 8; i++) { let y = GOAL_Y_TOP + 14 + i * 17; ctx.beginPath(); ctx.moveTo(RIGHT_GOAL_X + 12, y); ctx.lineTo(RIGHT_GOAL_X + 38, y); ctx.stroke(); }
+            for (let i = 0; i < 6; i++) { let x = RIGHT_GOAL_X + 14 + i * 8; ctx.beginPath(); ctx.moveTo(x, GOAL_Y_TOP + 8); ctx.lineTo(x, GOAL_Y_BOTTOM - 8); ctx.stroke(); }
+        }
+        function drawCenterNet() {
+            ctx.strokeStyle = "#c4b57b";
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 16; i++) { let y = TOP_FENCE + 18 + i * 33; ctx.beginPath(); ctx.moveTo(CENTER_WALL_X - 18, y); ctx.lineTo(CENTER_WALL_X + 18, y); ctx.stroke(); }
+            for (let i = -5; i <= 5; i++) { let x = CENTER_WALL_X + i * 8; ctx.beginPath(); ctx.moveTo(x, TOP_FENCE + 10); ctx.lineTo(x, BOTTOM_FENCE - 10); ctx.stroke(); }
+            ctx.fillStyle = "#e6d68a";
+            for (let i = -3; i <= 3; i++) for (let j = 0; j < 5; j++) ctx.fillRect(CENTER_WALL_X + i*8 - 1, TOP_FENCE + 26 + j*50, 2, 2);
+        }
+        function drawShadow(x, y, radius, intensity = 0.4) {
+            ctx.save();
+            ctx.shadowColor = `rgba(0,0,0,${intensity})`;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.ellipse(x, y + radius*0.4, radius*0.85, radius*0.45, 0, 0, Math.PI*2);
+            ctx.fillStyle = "rgba(0,0,0,0.35)";
+            ctx.fill();
+            ctx.restore();
+        }
+        function drawSlime(s, isBlue, jumpAnim, charge) {
+            let scaleX = 1 + jumpAnim * 0.1;
+            let scaleY = 1 - jumpAnim * 0.15;
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            ctx.scale(scaleX, scaleY);
+            ctx.beginPath();
+            ctx.arc(0, 0, SLIME_RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = isBlue ? "#4285F4" : "#EA4335";
+            ctx.fill();
+            ctx.strokeStyle = "#1f1a12";
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+            ctx.fillStyle = "white";
+            ctx.beginPath(); ctx.ellipse(-10, -7, 7, 7, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(10, -7, 7, 7, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#010101";
+            ctx.beginPath(); ctx.arc(-11, -8, 3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(9, -8, 3, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.beginPath(); ctx.arc(-14, -11, 1.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-9, -5, 1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(6, -11, 1.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(11, -5, 1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, 6, 12, 0.1, Math.PI - 0.1);
+            ctx.strokeStyle = "#3a2a1a";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            if (jumpAnim > 0.1) {
+                ctx.fillStyle = "#ff8866";
+                ctx.beginPath();
+                ctx.ellipse(0, 16, 5, 3.5, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+            ctx.restore();
+            if (charge > 0) {
+                let percent = charge / MAX_JUMP_CHARGE;
+                let radius = SLIME_RADIUS + 6 + percent * 14;
+                let hue = 60 - percent * 60;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, radius, 0, Math.PI*2);
+                ctx.strokeStyle = `hsla(${hue}, 100%, 55%, ${0.6 + percent*0.4})`;
+                ctx.lineWidth = 5;
+                ctx.stroke();
+            }
+        }
+        function drawTrail() {
+            for (let i = 0; i < trail.length; i++) {
+                let alpha = trail[i].life * 0.6;
+                ctx.beginPath();
+                ctx.arc(trail[i].x, trail[i].y, BALL_RADIUS * 0.7, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 220, 100, ${alpha})`;
+                ctx.fill();
+            }
+        }
+        function drawParticles() {
+            for (let p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (p.life + 0.3), 0, Math.PI*2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            }
+        }
+        function drawRealisticBall() {
+            drawShadow(ball.x, ball.y, BALL_RADIUS, 0.5);
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.fillStyle = "#000000";
+            ctx.beginPath();
+            ctx.moveTo(ball.x, ball.y - 13);
+            ctx.lineTo(ball.x - 8, ball.y - 5);
+            ctx.lineTo(ball.x - 5, ball.y + 5);
+            ctx.lineTo(ball.x + 5, ball.y + 5);
+            ctx.lineTo(ball.x + 8, ball.y - 5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(ball.x - 11, ball.y + 2);
+            ctx.lineTo(ball.x - 5, ball.y + 8);
+            ctx.lineTo(ball.x + 5, ball.y + 8);
+            ctx.lineTo(ball.x + 11, ball.y + 2);
+            ctx.lineTo(ball.x + 6, ball.y - 1);
+            ctx.lineTo(ball.x - 6, ball.y - 1);
+            ctx.fill();
+            ctx.fillStyle = "#000000";
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, 3.5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(ball.x, ball.y - 13);
+            ctx.lineTo(ball.x, ball.y + 13);
+            ctx.moveTo(ball.x - 13, ball.y);
+            ctx.lineTo(ball.x + 13, ball.y);
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+        
+        function render() {
+            drawGradientBackground();
+            drawFence();
+            drawRealisticGoals();
+            drawCenterNet();
+            drawShadow(blueSlime.x, blueSlime.y, SLIME_RADIUS, 0.4);
+            drawShadow(redSlime.x, redSlime.y, SLIME_RADIUS, 0.4);
+            drawSlime(blueSlime, true, blueJumpAnim, blueSlime.charging ? blueSlime.jumpCharge / MAX_JUMP_CHARGE : 0);
+            drawSlime(redSlime, false, redJumpAnim, redSlime.charging ? redSlime.jumpCharge / MAX_JUMP_CHARGE : 0);
+            drawTrail();
+            drawParticles();
+            drawRealisticBall();
+            if (paused && gameStarted && !gameWinner) {
+                ctx.fillStyle = "rgba(0,0,0,0.75)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = "bold 56px 'Courier New'";
+                ctx.fillStyle = "#ffdf7e";
+                ctx.textAlign = "center";
+                ctx.fillText("ПАУЗА", canvas.width/2, canvas.height/2);
+                ctx.font = "28px monospace";
+                ctx.fillStyle = "#fff0b5";
+                ctx.fillText("Нажмите P для продолжения", canvas.width/2, canvas.height/2 + 70);
+                ctx.textAlign = "left";
+            }
+            if (gameWinner) {
+                ctx.fillStyle = "rgba(0,0,0,0.85)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = "bold 56px 'Courier New'";
+                ctx.fillStyle = "#ffdf7e";
+                ctx.textAlign = "center";
+                ctx.fillText("МАТЧ ЗАВЕРШЁН", canvas.width/2, canvas.height/2);
+                ctx.font = "28px monospace";
+                ctx.fillStyle = "#fff0b5";
+                ctx.fillText("Нажмите 'НАЧАТЬ ЗАНОВО'", canvas.width/2, canvas.height/2 + 70);
+                ctx.textAlign = "left";
+            }
+        }
+        
+        function gameLoop() {
+            if (gameStarted && !paused && !gameWinner) {
+                handleInput();
+                handleCollisions();
+                checkGoal();
+            }
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            gameStarted = true;
+            paused = false;
+            resetFullGame();
+            startTimer();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        
+        // --- ПЕРЕКЛЮЧЕНИЕ МЕЖДУ СТАРТОВЫМ ЭКРАНОМ И ИГРОЙ ---
+        const startScreenDiv = document.getElementById('startScreen');
+        const gameContainerDiv = document.getElementById('gameContainer');
+        const startBtn = document.getElementById('startGameBtn');
+        
+        startBtn.addEventListener('click', () => {
+            startScreenDiv.style.opacity = '0';
+            setTimeout(() => {
+                startScreenDiv.style.display = 'none';
+                gameContainerDiv.style.display = 'block';
+                initAudio();
+                startGame();
+            }, 500);
+        });
+        
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) { keys[e.code] = true; e.preventDefault(); }
+            if (e.code === 'KeyP' && gameStarted && !gameWinner) {
+                paused = !paused;
+                e.preventDefault();
+            }
+            if (['ArrowUp','ArrowLeft','ArrowRight','KeyW','KeyA','KeyD'].includes(e.code)) e.preventDefault();
+        });
+        window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
+        
+        gameLoop();
+    })();
+</script>
+</body>
+</html>
